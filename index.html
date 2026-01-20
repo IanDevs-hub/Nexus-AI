@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS AI | Private Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --nexus-blue: #33CCFF; /* Matches your logo color */
+            --dark-bg: #050505; 
+            --card-bg: #111111;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--dark-bg); 
+            color: #ffffff; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        header { 
+            padding: 15px; 
+            background: #ffffff; /* White background to make the blue logo stand out */
+            text-align: center; 
+            border-bottom: 4px solid var(--nexus-blue);
+            box-shadow: 0 4px 15px rgba(51, 204, 255, 0.3);
+        }
+
+        header img {
+            height: 50px; /* Adjust based on your logo shape */
+            display: block;
+            margin: 0 auto;
+        }
+
+        #chat-flow { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 30px 15%; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message { 
+            max-width: 80%; 
+            padding: 15px 20px; 
+            border-radius: 18px; 
+            line-height: 1.6;
+            font-size: 15px;
+            animation: slideUp 0.3s ease;
+        }
+
+        .user { 
+            align-self: flex-end; 
+            background: var(--nexus-blue); 
+            color: #000; 
+            font-weight: 600;
+            border-bottom-right-radius: 4px;
+        }
+
+        .nexus { 
+            align-self: flex-start; 
+            background: var(--card-bg); 
+            border: 1px solid #333; 
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-area { 
+            padding: 25px 15%; 
+            background: #0a0a0a; 
+            display: flex; 
+            gap: 12px;
+            border-top: 1px solid #222;
+        }
+
+        input { 
+            flex: 1; 
+            background: #1a1a1a; 
+            border: 2px solid #333; 
+            color: white; 
+            padding: 14px 20px; 
+            border-radius: 12px; 
+            outline: none; 
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--nexus-blue);
+        }
+
+        button { 
+            background: var(--nexus-blue); 
+            color: #000; 
+            border: none; 
+            padding: 0 30px; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #2bbbe6;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            #chat-flow, .input-area { padding-left: 5%; padding-right: 5%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="logo.png" alt="NEXUS">
+    </header>
+
+    <div id="chat-flow">
+        <div class="message nexus">
+            System Online. Welcome back, Partner. How can Nexus assist your operations today?
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Type a command for Nexus..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">SEND</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatFlow = document.getElementById('chat-flow');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // 1. Display User Message
+            chatFlow.innerHTML += `<div class="message user">${message}</div>`;
+            input.value = '';
+            chatFlow.scrollTop = chatFlow.scrollHeight;
+
+            // 2. Add Loading Indicator
+            const loadingId = "load-" + Date.now();
+            chatFlow.innerHTML += `<div class="message nexus" id="${loadingId}">Nexus is thinking...</div>`;
+
+            try {
+                // REPLACE THIS URL with your actual Render URL once it says "Live"
+                const RENDER_URL = 'https://your-app-name.onrender.com/chat'; 
+
+                const response = await fetch(RENDER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                // 3. Replace loading text with actual reply
+                document.getElementById(loadingId).innerText = data.reply || data.error;
+                
+            } catch (error) {
+                document.getElementById(loadingId).innerText = "Connection Error. Ensure backend is active.";
+                document.getElementById(loadingId).style.color = "red";
+            }
+            
+            chatFlow.scrollTop = chatFlow.scrollHeight;
+        }
+    </script>
+</body>
+</html>
