@@ -1,16 +1,26 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
-import os
 
 app = Flask(__name__)
-CORS(app)  # This allows your website to talk to your server
 
-# SETUP: Using your API Key
-# For now, we put it here. On Render, we will hide it.
-API_KEY = "AIzaSyBDEsJJBlTLyz5dVlrqPNvaJVOJueLfE_g"
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# This line is CRITICAL - it allows your GitHub website to talk to this server
+CORS(app)
+
+# SECURITY: We tell the code to look for a secret variable called 'GEMINI_API_KEY'
+# You will set this in the Render Dashboard under 'Environment Variables'
+API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if API_KEY:
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    print("WARNING: No API Key found. Check your Render Environment Variables.")
+
+@app.route('/')
+def home():
+    return "Nexus Backend is Online"
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -18,13 +28,19 @@ def chat():
         data = request.json
         user_message = data.get("message")
         
-        # Talk to Gemini
+        if not user_message:
+            return jsonify({"error": "No message received"}), 400
+
+        # Ask Gemini for the response
         response = model.generate_content(user_message)
         
         return jsonify({"reply": response.text})
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error: {str(e)}")
+        return jsonify({"error": "Nexus Brain is processing... please try again."}), 500
 
 if __name__ == '__main__':
-    # We run on port 5000
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Use the port Render provides, or default to 5000 for local testing
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
