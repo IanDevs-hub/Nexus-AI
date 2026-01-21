@@ -14,7 +14,7 @@ API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if API_KEY:
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash')
 else:
     print("WARNING: No API Key found. Check your Render Environment Variables.")
 
@@ -43,4 +43,5 @@ def chat():
 if __name__ == '__main__':
     # Use the port Render provides, or default to 5000 for local testing
     port = int(os.environ.get("PORT", 5000))
+
     app.run(host='0.0.0.0', port=port)
