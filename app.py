@@ -1,48 +1,44 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+from google import genai # This is the NEW 2026 library
 
 app = Flask(__name__)
 CORS(app)
 
-# 1. 2026 CONNECTIVITY: Using the stable 'rest' transport
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"), transport="rest")
+# Initialize the NEW Client
+# Make sure GEMINI_API_KEY is in your Render Env Variables!
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def home():
+    # This keeps UptimeRobot happy (returning 200)
     return "Nexus Core Online", 200
+
+@app.route('/health')
+def health():
+    # This fixes the 404 error UptimeRobot was getting at /health
+    return "Healthy", 200
 
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     user_message = data.get('message')
     
-    # 2. 2026 MODEL MAPPING: Fixing the 404 Error
-    # We map your UI buttons to the new 2026 production names
-    model_map = {
-        "gemini-3-flash-preview": "gemini-3-flash",
-        "gemini-3-pro-preview": "gemini-3-pro",
-        "gemini-2.5-pro": "gemini-2.5-pro"
-    }
-    
-    # Get the model name, or use the 'latest' alias which never 404s
-    requested_name = data.get('model')
-    model_name = model_map.get(requested_name, "gemini-flash-latest")
-
+    # 2026 Model Names
+    # We use 'gemini-2.0-flash' or 'gemini-3.0-flash'
     try:
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content(user_message)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash", 
+            contents=user_message
+        )
         return jsonify({'reply': response.text})
-    
     except Exception as e:
-        # 3. SMART FALLBACK: If 'Gemini 3' is busy, use the universal anchor
-        try:
-            fallback = genai.GenerativeModel("gemini-flash-latest")
-            res = fallback.generate_content(user_message)
-            return jsonify({'reply': res.text})
-        except Exception as e2:
-            return jsonify({'error': f"Neural Link Failure: {str(e2)}"}), 500
+        # If the key is leaked or model is busy, show clear error
+        error_msg = str(e)
+        if "API_KEY_INVALID" in error_msg:
+            return jsonify({'error': "SECURITY ALERT: New API Key needed in Render Settings."}), 403
+        return jsonify({'error': f"Neural Link Error: {error_msg}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
