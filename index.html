@@ -6,61 +6,181 @@
     <title>NEXUS AI | Quantum Core</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-blue: #00f2ff; --deep-space: #05070a; --glass: rgba(15, 20, 25, 0.9); --border-glow: rgba(0, 242, 255, 0.3); }
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --bg-dark: #020406;
+            --sidebar-glass: rgba(10, 15, 25, 0.8);
+            --border-glow: rgba(0, 242, 255, 0.2);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--deep-space); font-family: 'Inter', sans-serif; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+            color: white;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-glass);
+            border-right: 1px solid var(--border-glow);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            z-index: 100;
+        }
+
+        .new-chat-btn {
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Orbitron';
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .new-chat-btn:hover { background: var(--neon-blue); color: black; }
+
+        .history-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-family: 'Orbitron'; }
         
-        /* Sci-Fi Background */
-        body::before { content: ""; position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px); background-size: 50px 50px; transform: perspective(500px) rotateX(60deg); z-index: -1; animation: gridMove 20s linear infinite; }
-        @keyframes gridMove { from { transform: perspective(500px) rotateX(60deg) translateY(0); } to { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+        #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .history-item {
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid transparent;
+        }
+        .history-item:hover { border-color: var(--neon-blue); color: white; }
 
-        header { padding: 15px 5%; border-bottom: 1px solid var(--border-glow); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); }
-        .logo { font-family: 'Orbitron'; color: var(--neon-blue); letter-spacing: 2px; }
-        .model-picker { background: black; color: var(--neon-blue); border: 1px solid var(--border-glow); padding: 5px; font-family: 'Orbitron'; font-size: 10px; border-radius: 4px; }
+        /* --- MAIN CHAT AREA --- */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
 
-        #chat-flow { flex: 1; overflow-y: auto; padding: 30px 10%; display: flex; flex-direction: column; gap: 15px; }
-        .message { padding: 12px 18px; border-radius: 8px; max-width: 80%; line-height: 1.5; }
-        .nexus { background: var(--glass); border-left: 3px solid var(--neon-blue); }
-        .user { align-self: flex-end; background: rgba(255,255,255,0.1); border-right: 3px solid white; }
+        header {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glow);
+        }
 
-        .input-area { padding: 20px 10%; background: var(--deep-space); border-top: 1px solid var(--border-glow); }
-        .input-wrapper { display: flex; border: 1px solid var(--border-glow); border-radius: 8px; background: rgba(255,255,255,0.02); }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 15px; outline: none; }
-        button { background: var(--neon-blue); color: black; border: none; padding: 0 20px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; border-radius: 0 8px 8px 0; }
-        .clear-btn { font-size: 10px; color: #666; cursor: pointer; text-decoration: underline; margin-top: 8px; display: inline-block; }
+        .logo { font-family: 'Orbitron'; color: var(--neon-blue); letter-spacing: 3px; font-weight: bold; }
+
+        #chat-flow {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 15%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message { padding: 15px 20px; border-radius: 12px; max-width: 85%; line-height: 1.6; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nexus { background: rgba(0, 242, 255, 0.05); border-left: 3px solid var(--neon-blue); }
+        .user { align-self: flex-end; background: rgba(255, 255, 255, 0.05); border-right: 3px solid #fff; }
+
+        .input-area { padding: 30px 15%; }
+        .input-wrapper {
+            display: flex;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 5px;
+        }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 15px; outline: none; font-size: 16px; }
+        button#sendBtn {
+            background: var(--neon-blue);
+            color: black;
+            border: none;
+            padding: 0 25px;
+            border-radius: 8px;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Responsive Mobile */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            #chat-flow, .input-area { padding: 20px 5%; }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">NEXUS AI</div>
-        <select id="modelSelect" class="model-picker">
-            <option value="gemini-3-flash-preview">⚡ FAST MODE</option>
-            <option value="gemini-3-pro-preview">💎 PRO MODE</option>
-            <option value="gemini-2.5-pro">🧠 THINKING MODE</option>
-        </select>
-    </header>
 
-    <div id="chat-flow">
-        <div class="message nexus"><strong>[SYSTEM]</strong> Nexus Sync Complete. Neural Link Established.</div>
+    <div class="sidebar">
+        <div class="logo" style="margin-bottom: 30px;">NEXUS AI</div>
+        <div class="new-chat-btn" onclick="clearMemory()">+ NEW CHAT</div>
+        <div class="history-label">Recent Conversations</div>
+        <div id="history-list">
+            </div>
     </div>
 
-    <div class="input-area">
-        <div class="input-wrapper">
-            <input type="text" id="userInput" placeholder="Awaiting command..." onkeypress="if(event.key === 'Enter') send()">
-            <button onclick="send()">EXECUTE</button>
+    <div class="main-container">
+        <header>
+            <div class="status-indicator" style="font-size: 10px; color: var(--neon-blue);">● CORE_SYSTEM_ACTIVE</div>
+            <select id="modelSelect" style="background:transparent; color:var(--neon-blue); border:1px solid var(--border-glow); font-family:'Orbitron'; font-size:10px; padding:5px;">
+                <option value="gemini-3-flash-preview">⚡ FLASH 3.0</option>
+                <option value="gemini-3-pro-preview">💎 PRO 3.0</option>
+            </select>
+        </header>
+
+        <div id="chat-flow">
+            <div class="message nexus"><strong>[SYSTEM]</strong> Welcome to the Quantum Interface. Your history is synced locally.</div>
         </div>
-        <div class="clear-btn" onclick="clearMemory()">[WIPE LOCAL MEMORY]</div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="userInput" placeholder="Initialize command..." onkeypress="if(event.key === 'Enter') send()">
+                <button id="sendBtn" onclick="send()">EXECUTE</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // MEMORY: Load previous chat from LocalStorage on refresh
+        // MEMORY SYSTEM
         window.onload = () => {
-            const savedChat = localStorage.getItem('nexus_memory');
+            loadHistory();
+            const savedChat = localStorage.getItem('nexus_current_chat');
             if (savedChat) {
                 document.getElementById('chat-flow').innerHTML = savedChat;
                 document.getElementById('chat-flow').scrollTop = document.getElementById('chat-flow').scrollHeight;
             }
         };
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('nexus_sidebar') || '[]');
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerText = item;
+                list.appendChild(div);
+            });
+        }
 
         async function send() {
             const input = document.getElementById('userInput');
@@ -69,11 +189,12 @@
             const msg = input.value.trim();
             if (!msg) return;
 
+            // Update UI
             flow.innerHTML += `<div class="message user">${msg}</div>`;
             input.value = '';
             
             const loadId = "id-" + Date.now();
-            flow.innerHTML += `<div class="message nexus" id="${loadId}">[PROCESSING...]</div>`;
+            flow.innerHTML += `<div class="message nexus" id="${loadId}">[NEURAL_LINKING...]</div>`;
             flow.scrollTop = flow.scrollHeight;
 
             try {
@@ -84,18 +205,29 @@
                 });
                 const data = await response.json();
                 
-                document.getElementById(loadId).innerHTML = `<strong>NEXUS (${model.split('-')[1].toUpperCase()}):</strong><br>${(data.reply || data.error).replace(/\n/g, '<br>')}`;
+                const reply = data.reply || data.error;
+                document.getElementById(loadId).innerHTML = `<strong>NEXUS:</strong><br>${reply.replace(/\n/g, '<br>')}`;
                 
-                // MEMORY: Save chat state to LocalStorage
-                localStorage.setItem('nexus_memory', flow.innerHTML);
+                // SAVE CURRENT CHAT
+                localStorage.setItem('nexus_current_chat', flow.innerHTML);
+
+                // SAVE TO SIDEBAR (Only the first message of a new chat)
+                let history = JSON.parse(localStorage.getItem('nexus_sidebar') || '[]');
+                if (!history.includes(msg.substring(0, 30))) {
+                    history.unshift(msg.substring(0, 30));
+                    if (history.length > 10) history.pop();
+                    localStorage.setItem('nexus_sidebar', JSON.stringify(history));
+                    loadHistory();
+                }
+
             } catch (e) {
-                document.getElementById(loadId).innerText = "INTERFACE TIMEOUT. WAKING SERVER...";
+                document.getElementById(loadId).innerText = "ERROR: INTERFACE TIMEOUT.";
             }
             flow.scrollTop = flow.scrollHeight;
         }
 
         function clearMemory() {
-            localStorage.removeItem('nexus_memory');
+            localStorage.removeItem('nexus_current_chat');
             location.reload();
         }
     </script>
