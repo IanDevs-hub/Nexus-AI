@@ -1,14 +1,28 @@
 import os
+import sys
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import genai
-from google.genai import types
 
 app = Flask(__name__)
 CORS(app)
 
 # Initialize Client
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+
+# --- DIAGNOSTIC TOOL ---
+# This runs once when the server starts to find valid model names
+print("--- SYSTEM SCAN: SEARCHING FOR BRAINS ---", file=sys.stdout)
+try:
+    # We ask Google: "What models can I use?"
+    for m in client.models.list():
+        # We only care about models that generate content
+        if "generateContent" in m.supported_actions:
+            print(f"✅ FOUND: {m.name}", file=sys.stdout)
+except Exception as e:
+    print(f"❌ SCAN ERROR: {str(e)}", file=sys.stdout)
+print("-----------------------------------------", file=sys.stdout)
+# -----------------------
 
 @app.route('/')
 def home():
@@ -23,32 +37,32 @@ def chat():
     data = request.json
     user_message = data.get('message')
 
-    # THE FIX: A list of backup brains
-    # 1. gemini-1.5-flash-001 (The specific stable version ID)
-    # 2. gemini-1.5-flash (The alias)
-    # 3. gemini-1.5-pro (The heavy lifter)
-    models_to_try = ["gemini-1.5-flash-001", "gemini-1.5-flash", "gemini-1.5-pro"]
+    # STRATEGY: Try the Experimental 2.0 model first (usually open access)
+    # If that fails, try the generic 'gemini-2.0-flash' again
+    models_to_try = ["gemini-2.0-flash-exp", "gemini-2.0-flash"]
     
     last_error = ""
 
     for model_name in models_to_try:
         try:
-            print(f"Attempting connection to: {model_name}...")
             response = client.models.generate_content(
                 model=model_name,
                 contents=user_message
             )
-            # If we get here, it worked! Return the answer.
             return jsonify({'reply': response.text})
             
         except Exception as e:
-            print(f"Failed on {model_name}: {str(e)}")
-            last_error = str(e)
-            # If it fails, the loop continues to the next model automatically
+            error_msg = str(e)
+            print(f"⚠️ Failed on {model_name}: {error_msg}", file=sys.stdout)
+            last_error = error_msg
+            
+            # If it's a Rate Limit (429), tell the user to wait
+            if "429" in error_msg:
+                return jsonify({'error': "Nexus Overloaded. Please wait 60 seconds."}), 429
+            
             continue
 
-    # If ALL models fail, show the error
-    return jsonify({'error': f"All Neural Links Failed. Last error: {last_error}"}), 500
+    return jsonify({'error': f"All frequencies jammed. Last error: {last_error}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
